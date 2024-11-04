@@ -1,5 +1,3 @@
-# T_S_T_and_Sae_T_values.csv
-
 ## Overview
 This CSV file contains the calculated values of **T**, **S(T)**, and **Sae(T)** based on the soil classification and input parameters provided by the user. The calculations follow the guidelines set by the **2007 Earthquake Regulation** for local soil classes.
 
