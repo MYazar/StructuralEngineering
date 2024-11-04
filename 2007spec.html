@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seismic Response Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label, input {
+            margin: 10px 0;
+            display: block;
+        }
+        button {
+            margin: 10px 0;
+            padding: 10px 20px;
+        }
+        #plot {
+            width: 100%;
+            height: 500px; /* Set a fixed height for the plot */
+            margin: auto;
+        }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Seismic Response Calculator</h1>
+    
+    <label for="soilClass">Enter soil class (Z1, Z2, Z3, Z4):</label>
+    <input type="text" id="soilClass" placeholder="Z1, Z2, Z3, Z4" required>
+    
+    <label for="A0">Enter A0 value (default: 0.4):</label>
+    <input type="number" id="A0" placeholder="0.4">
+    
+    <label for="I">Enter I value:</label>
+    <input type="number" id="I" placeholder="I value" required>
+    
+    <button onclick="calculate()">Calculate</button>
+
+    <button id="downloadBtn" style="display:none;" onclick="downloadCSV()">Download CSV</button>
+
+    <h2>Graphs</h2>
+    <div id="plot"></div>
+
+    <script>
+        const soilClasses = {
+            'Z1': { TA: 0.10, TB: 0.30 },
+            'Z2': { TA: 0.15, TB: 0.40 },
+            'Z3': { TA: 0.15, TB: 0.60 },
+            'Z4': { TA: 0.20, TB: 0.90 }
+        };
+
+        let resultsArray = [];
+
+        function calculate() {
+            const soilClass = document.getElementById('soilClass').value.toUpperCase();
+            const A0 = parseFloat(document.getElementById('A0').value) || 0.4;
+            const I = parseFloat(document.getElementById('I').value);
+
+            if (!soilClasses[soilClass] || isNaN(I)) {
+                alert("Please enter a valid soil class (Z1, Z2, Z3, Z4) and a valid I value.");
+                return;
+            }
+
+            const TA = soilClasses[soilClass].TA;
+            const TB = soilClasses[soilClass].TB;
+
+            const T1 = Array.from({ length: 100 }, (_, i) => i * TA / 100);
+            const T2 = Array.from({ length: 100 }, (_, i) => TA + (i * (TB - TA) / 100));
+            const T3 = Array.from({ length: 100 }, (_, i) => TB + (i * (6 - TB) / 100));
+
+            const S_T1 = T1.map(t => 1 + 1.5 * t / TA);
+            const S_T2 = Array(100).fill(2.5);
+            const S_T3 = T3.map(t => 2.5 * Math.pow(TB / t, 0.8));
+
+            const Sae_T1 = S_T1.map(s => A0 * I * s);
+            const Sae_T2 = S_T2.map(s => A0 * I * s);
+            const Sae_T3 = S_T3.map(s => A0 * I * s);
+
+            // Prepare results for display
+            resultsArray = [];
+            for (let i = 0; i < T1.length; i++) {
+                resultsArray.push({ T: T1[i], S_T: S_T1[i], Sae_T: Sae_T1[i] });
+            }
+            for (let i = 0; i < T2.length; i++) {
+                resultsArray.push({ T: T2[i], S_T: S_T2[i], Sae_T: Sae_T2[i] });
+            }
+            for (let i = 0; i < T3.length; i++) {
+                resultsArray.push({ T: T3[i], S_T: S_T3[i], Sae_T: Sae_T3[i] });
+            }
+
+            // Show download button
+            document.getElementById('downloadBtn').style.display = 'block';
+
+            // Render the plots
+            renderPlot(T1, S_T1, Sae_T1, T2, S_T2, Sae_T2, T3, S_T3, Sae_T3);
+        }
+
+        function renderPlot(T1, S_T1, Sae_T1, T2, S_T2, Sae_T2, T3, S_T3, Sae_T3) {
+            const trace1 = {
+                x: [...T1, ...T2, ...T3],
+                y: [...S_T1, ...S_T2, ...S_T3],
+                mode: 'lines',
+                name: 'S(T)',
+                line: { color: 'blue' }
+            };
+
+            const trace2 = {
+                x: [...T1, ...T2, ...T3],
+                y: [...Sae_T1, ...Sae_T2, ...Sae_T3],
+                mode: 'lines',
+                name: 'Sae(T)',
+                line: { color: 'orange' }
+            };
+
+            const data = [trace1, trace2];
+
+            const layout = {
+                title: 'Seismic Response Spectrum',
+                xaxis: { title: 'T (s)' },
+                yaxis: { title: 'Acceleration (g)', rangemode: 'tozero' },
+                showlegend: true
+            };
+
+            Plotly.newPlot('plot', data, layout);
+        }
+
+        function downloadCSV() {
+            const csvRows = [];
+            const headers = ['T (s)', 'S(T)', 'Sae(T)'];
+            csvRows.push(headers.join(','));
+
+            resultsArray.forEach(row => {
+                csvRows.push(`${row.T},${row.S_T},${row.Sae_T}`);
+            });
+
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'T_S_T_and_Sae_T_values.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
