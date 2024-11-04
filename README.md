@@ -23,13 +23,6 @@ The soil classes included in the calculations are:
 3. Upon completion of the calculations, the results will be saved in the `T_S_T_and_Sae_T_values.csv` file.
 4. You can open the CSV file using any spreadsheet software or a text editor to view the calculated values.
 
-## Example
-Here is an example of what the CSV file content may look like:
 
-## Conclusion
-This file serves as a valuable resource for engineers and researchers involved in seismic analysis, providing essential data for understanding soil behavior during seismic events.
-
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
